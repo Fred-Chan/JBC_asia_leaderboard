@@ -55,6 +55,46 @@
             color: #1a73e8;
             border-color: #fff;
         }
+        /* 仲裁申请提示条 */
+        .notice-bar {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-bottom: 2px solid #ff9800;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .notice-bar .notice-icon {
+            font-size: 20px;
+        }
+        .notice-bar .notice-text {
+            color: #e65100;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        .notice-bar .btn-appeal {
+            padding: 8px 20px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .notice-bar .btn-appeal:hover {
+            background: #f57c00;
+            transform: translateY(-1px);
+        }
         .container {
             flex: 1;
             width: 100%;
@@ -76,7 +116,6 @@
             border: none;
             background: transparent;
         }
-
         /* Presentation mode overlay */
         .presentation-overlay {
             display: none;
@@ -218,12 +257,22 @@
             <button class="btn-presentation" onclick="openPresentation()">展示模式</button>
         </div>
     </header>
+    
+    <!-- 仲裁申请提示条 -->
+    <div class="notice-bar">
+        <span class="notice-icon">⚠️</span>
+        <span class="notice-text">该记录可能因为成绩复核发生变化。如需反馈修正，请点击按钮填写仲裁申请。</span>
+        <a href="https://shuju.itccc.org.cn/f/ERgplT" target="_blank" class="btn-appeal">
+            填写仲裁申请 →
+        </a>
+    </div>
+    
     <div class="container">
         <div class="iframe-wrapper">
             <iframe class="dingtalk-embed" src="https://alidocs.dingtalk.com/aitable/share/view/v01Yvenve5BXM8Q4loy_hERWDMS_icGN2tm?dd_full_screen=true" frameborder="0" width="100%" height="533" style="background: transparent; border: none;"></iframe>
         </div>
     </div>
-
+    
     <!-- Presentation Mode Overlay -->
     <div class="presentation-overlay" id="presentationOverlay">
         <div class="presentation-toolbar">
@@ -253,12 +302,11 @@
             <div class="countdown-bar" id="countdownBar"></div>
         </div>
     </div>
-
+    
     <script>
         var IFRAME_SRC = 'https://alidocs.dingtalk.com/aitable/share/view/v01Yvenve5BXM8Q4loy_hERWDMS_icGN2tm?dd_full_screen=true';
-        var ROW_HEIGHT = 36; // estimated row height in px (DingTalk aitable)
-        var HEADER_HEIGHT = 90; // estimated header area height in px
-
+        var ROW_HEIGHT = 36;
+        var HEADER_HEIGHT = 90;
         var state = {
             isOpen: false,
             isPlaying: false,
@@ -268,83 +316,60 @@
             countdownTimer: null,
             countdownStart: 0
         };
-
         function getRowsPerPage() {
             return parseInt(document.getElementById('rowsPerPage').value) || 20;
         }
-
         function getIntervalSeconds() {
             return parseInt(document.getElementById('intervalSeconds').value) || 10;
         }
-
         function openPresentation() {
             var overlay = document.getElementById('presentationOverlay');
             overlay.classList.add('active');
             state.isOpen = true;
             state.currentPage = 0;
-
             var iframe = document.getElementById('presIframe');
             var container = document.getElementById('presContent');
             var containerHeight = container.offsetHeight;
-
-            // Make iframe tall enough to hold all data, we'll scroll by moving its position
-            var iframeHeight = containerHeight * 20; // tall enough for many pages
+            var iframeHeight = containerHeight * 20;
             iframe.style.height = iframeHeight + 'px';
             iframe.style.top = '0px';
             iframe.src = IFRAME_SRC;
-
-            // Wait for iframe to load, then calculate pages
             iframe.onload = function() {
                 calculatePages();
                 updatePageIndicator();
             };
-
             updatePageIndicator();
             document.addEventListener('keydown', handleKeyDown);
         }
-
         function closePresentation() {
             var overlay = document.getElementById('presentationOverlay');
             overlay.classList.remove('active');
             state.isOpen = false;
             stopAutoPlay();
-
             var iframe = document.getElementById('presIframe');
             iframe.src = '';
-
             document.removeEventListener('keydown', handleKeyDown);
         }
-
         function calculatePages() {
             var container = document.getElementById('presContent');
             var containerHeight = container.offsetHeight;
             var rowsPerPage = getRowsPerPage();
             var visibleContentHeight = rowsPerPage * ROW_HEIGHT;
-
-            // Estimate total rows based on iframe total content
-            // Since we can't read cross-origin iframe content, we estimate
-            var estimatedTotalRows = 200; // reasonable upper bound
+            var estimatedTotalRows = 200;
             state.totalPages = Math.max(1, Math.ceil(estimatedTotalRows / rowsPerPage));
         }
-
         function goToPage(page) {
             var container = document.getElementById('presContent');
             var containerHeight = container.offsetHeight;
             var rowsPerPage = getRowsPerPage();
-
-            // Calculate scroll offset: each page scrolls by rowsPerPage * ROW_HEIGHT
             var scrollOffset = page * rowsPerPage * ROW_HEIGHT;
-
             var iframe = document.getElementById('presIframe');
             iframe.style.top = -scrollOffset + 'px';
-
             state.currentPage = page;
             updatePageIndicator();
         }
-
         function nextPage() {
             var next = state.currentPage + 1;
-            // If we go beyond estimated pages, refresh and go back to page 0
             if (next >= state.totalPages) {
                 refreshIframe();
                 state.currentPage = 0;
@@ -354,17 +379,14 @@
             }
             resetCountdown();
         }
-
         function prevPage() {
             if (state.currentPage > 0) {
                 goToPage(state.currentPage - 1);
             }
             resetCountdown();
         }
-
         function refreshIframe() {
             var iframe = document.getElementById('presIframe');
-            // Force reload by adding a cache-busting query param
             var sep = IFRAME_SRC.indexOf('?') > -1 ? '&' : '?';
             iframe.src = IFRAME_SRC + sep + '_t=' + Date.now();
             iframe.onload = function() {
@@ -372,12 +394,10 @@
                 updatePageIndicator();
             };
         }
-
         function updatePageIndicator() {
             var indicator = document.getElementById('pageIndicator');
             indicator.textContent = '第 ' + (state.currentPage + 1) + ' / ' + state.totalPages + ' 页  ·  每页 ' + getRowsPerPage() + ' 条';
         }
-
         function togglePlay() {
             if (state.isPlaying) {
                 stopAutoPlay();
@@ -385,26 +405,21 @@
                 startAutoPlay();
             }
         }
-
         function startAutoPlay() {
             state.isPlaying = true;
             document.getElementById('btnPlayPause').textContent = '暂停';
             document.getElementById('presStatus').innerHTML = '自动播放中 · 每 <span class="highlight">' + getIntervalSeconds() + '</span> 秒翻页';
-
             resetCountdown();
             scheduleNextPage();
         }
-
         function stopAutoPlay() {
             state.isPlaying = false;
             document.getElementById('btnPlayPause').textContent = '开始';
             document.getElementById('presStatus').textContent = '已暂停';
-
             clearTimeout(state.timer);
             clearInterval(state.countdownTimer);
             document.getElementById('countdownBar').style.width = '0%';
         }
-
         function scheduleNextPage() {
             clearTimeout(state.timer);
             var interval = getIntervalSeconds() * 1000;
@@ -414,27 +429,22 @@
                     scheduleNextPage();
                 }
             }, interval);
-
             startCountdownBar(interval);
         }
-
         function startCountdownBar(duration) {
             var bar = document.getElementById('countdownBar');
             bar.style.transition = 'none';
             bar.style.width = '100%';
-            // Force reflow
             bar.offsetWidth;
             bar.style.transition = 'width ' + (duration / 1000) + 's linear';
             bar.style.width = '0%';
         }
-
         function resetCountdown() {
             if (state.isPlaying) {
                 clearTimeout(state.timer);
                 scheduleNextPage();
             }
         }
-
         function handleKeyDown(e) {
             if (!state.isOpen) return;
             switch (e.key) {
@@ -460,8 +470,6 @@
                     break;
             }
         }
-
-        // Update settings on change
         document.getElementById('rowsPerPage').addEventListener('change', function() {
             calculatePages();
             goToPage(0);
@@ -469,7 +477,6 @@
                 document.getElementById('presStatus').innerHTML = '自动播放中 · 每 <span class="highlight">' + getIntervalSeconds() + '</span> 秒翻页';
             }
         });
-
         document.getElementById('intervalSeconds').addEventListener('change', function() {
             if (state.isPlaying) {
                 resetCountdown();
